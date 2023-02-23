@@ -1,6 +1,7 @@
 import ctypes
 from threading import Thread
 from time import sleep
+import random
 import sys
 import pyautogui
 
@@ -11,13 +12,29 @@ class PreventIdle:
 
         self.interval = float(options.get("i") or options.get("interval") or 30)
         self.key = int(options.get("k") or options.get("key") or "0x14", 16)
-        self.manual_mode = options.get("noauto")
-        
-        print(options)
+        self.no_check_movement = options.get("nocheckmovement")
+
+        self.random_interval = (
+            list(map(lambda x: int(x), options.get("random").split(",")))
+            if options.get("random") and len(options.get("random").split(",")) == 2
+            else None
+        )
+
+        self.log = options.get("log")
+
+        if self.log:
+            print(
+                {
+                    "interval": self.interval,
+                    "key": hex(self.key),
+                    "no_check_movement": self.no_check_movement,
+                    "random_interval": self.random_interval,
+                    "log": self.log,
+                }
+            )
 
         self.__input_thread = None
         self.__process_thread = None
-
         self.__saved_cursor_pos = None
 
     def __parse_commandline_args(self):
@@ -67,23 +84,29 @@ class PreventIdle:
     def press_key_intermittently(self):
         try:
             while True:
-                sleep(self.interval)
-                
-                if self.manual_mode:
+                sleep(
+                    random.randint(self.random_interval[0], self.random_interval[1])
+                    if self.random_interval
+                    else self.interval
+                )
+
+                if self.no_check_movement:
                     self.__perform_key_press(self.key)
                     continue
 
                 curr_cursor_pos = pyautogui.position()
-                
-                if curr_cursor_pos == self.__saved_cursor_pos:
+
+                if (
+                    not self.__saved_cursor_pos
+                    or curr_cursor_pos == self.__saved_cursor_pos
+                ):
                     self.__perform_key_press(self.key)
-                    continue
 
                 self.__saved_cursor_pos = curr_cursor_pos
 
         except Exception as e:
             return
-        
+
     def __perform_key_press(self, key):
         ctypes.windll.user32.keybd_event(key, 0, 0, 0)
         ctypes.windll.user32.keybd_event(key, 0, 0x0002, 0)
