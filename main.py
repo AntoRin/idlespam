@@ -4,7 +4,7 @@ from time import sleep
 import sys
 
 
-class PreventIdle:
+class IdleSpam:
     def __init__(self):
         options = self.__parse_commandline_args()
 
@@ -54,5 +54,5 @@ class PreventIdle:
             return
 
 
-prevent_idle_handler = PreventIdle()
-prevent_idle_handler.initialize_process()
+idle_spam_handler = IdleSpam()
+idle_spam_handler.initialize_process()
